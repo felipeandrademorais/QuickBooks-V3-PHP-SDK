@@ -17,11 +17,10 @@ interface HttpClientInterface
     *  @param string  $body        For POST request, it will be the JSON
     *  @param int     $timeout     THe timeout in seconds for the request
     *  @param boolean $verifySSL   Set to false for OAuth 1, set to true for OAuth 2
-    *  @param array  $proxy        The proxy url and port
     *  @return IntuitResponse      Return the Intuit Response based on the HTTP Response
     *  @throws SDKException        If there is a configuration or the Netwokr issue, a SDKException is thrown.
     */
-   public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL, $proxy);
+   public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL);
 
    /**
     * Prepare the necessary options for the HTTP Client. For example, set the headers, Body and request url.

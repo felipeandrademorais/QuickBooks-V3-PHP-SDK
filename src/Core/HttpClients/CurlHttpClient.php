@@ -59,7 +59,7 @@ class CurlHttpClient implements HttpClientInterface
     /**
      * @inheritdoc
      */
-    public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL, $proxy)
+    public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL)
     {
         $this->clearResponse();
         $this->prepareRequest($url, $method, $headers, $body, $timeOut, $verifySSL);
