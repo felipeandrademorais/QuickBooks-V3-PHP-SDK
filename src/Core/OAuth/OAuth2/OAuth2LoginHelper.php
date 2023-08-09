@@ -131,8 +131,9 @@ class OAuth2LoginHelper
       }
     }
     $this->curlHttpClient = new CurlHttpClient(
-      proxyUrl: $proxyUrl,
-      proxyPort: $proxyPort
+      null,
+      $proxyUrl,
+      $proxyPort
     );
   }
 
