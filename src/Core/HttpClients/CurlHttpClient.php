@@ -12,35 +12,55 @@ use QuickBooksOnline\API\Core\CoreConstants;
  * @package QuickBooksOnline
  *
  */
-class CurlHttpClient implements HttpClientInterface{
+class CurlHttpClient implements HttpClientInterface
+{
 
     /**
-    * @var BaseCurl The basecURL instance will be used for performing Http/Https client request.
-    */
+     * @var BaseCurl The basecURL instance will be used for performing Http/Https client request.
+     */
     private $basecURL = null;
 
     /**
-    * @var IntuitResponse | False The parsed response from curl client to Intuit customized response
-    */
+     * @var IntuitResponse | False The parsed response from curl client to Intuit customized response
+     */
     private $intuitResponse = false;
+
+    /**
+     * @var ProxyUrl The proxy url for the http client
+     */
+    private $proxyUrl = null;
+
+    /**
+     * @var ProxyPort The proxy port for the http client
+     */
+    private $proxyPort = null;
 
     /**
      * The constructor for constructing the cURL http client for making API calls
      * @param BaseCurl $curl    A predefined BaseCurl instance to be used in this client
      */
-    public function __construct(BaseCurl $curl = null)
+    public function __construct(BaseCurl $curl = null, $proxyUrl = null, $proxyPort = null)
     {
-        if(isset($curl)){
-              $this->basecURL = $curl;
-        }else{
-              $this->basecURL = new BaseCurl();
+        if (isset($curl)) {
+            $this->basecURL = $curl;
+        } else {
+            $this->basecURL = new BaseCurl();
+        }
+
+        if (isset($proxyUrl)) {
+            $this->proxyUrl = $proxyUrl;
+        }
+
+        if (isset($proxyPort)) {
+            $this->proxyPort = $proxyPort;
         }
     }
 
     /**
      * @inheritdoc
      */
-    public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL){
+    public function makeAPICall($url, $method, array $headers, $body, $timeOut, $verifySSL, $proxy)
+    {
         $this->clearResponse();
         $this->prepareRequest($url, $method, $headers, $body, $timeOut, $verifySSL);
         $rawResponse = $this->executeRequest();
@@ -53,7 +73,8 @@ class CurlHttpClient implements HttpClientInterface{
     /**
      * @inheritdoc
      */
-    public function prepareRequest($url, $method, array $headers, $body, $timeOut, $verifySSL){
+    public function prepareRequest($url, $method, array $headers, $body, $timeOut, $verifySSL)
+    {
         if (defined('QUICKBOOKS_API_TIMEOUT')) {
             // if the timeout constant is set, use it for the timeout
             $timeOut = (int)QUICKBOOKS_API_TIMEOUT;
@@ -72,11 +93,16 @@ class CurlHttpClient implements HttpClientInterface{
             //When CURLOPT_HEADER is set to 0 the only effect is that header info from the response is excluded from the output.
             //So if you don't need it that's a few less KBs that curl will return to you.
             //In our case, header is required
-            CURLOPT_HEADER => true
+            CURLOPT_HEADER => true,
         ];
 
+        if ($this->proxyUrl && $this->proxyPort) {
+            $curl_opt[CURLOPT_PROXY] = $this->proxyUrl;
+            $curl_opt[CURLOPT_PROXYPORT] = $this->proxyPort;
+        }
+
         if ($method !== "GET" && isset($body)) {
-          $curl_opt[CURLOPT_POSTFIELDS] = $body;
+            $curl_opt[CURLOPT_POSTFIELDS] = $body;
         }
 
         //Set SSL. Only Enabled for OAuth 2 Request
@@ -89,15 +115,17 @@ class CurlHttpClient implements HttpClientInterface{
     /**
      * Before making any API call, clear the stored response from previous request.
      */
-    public function clearResponse(){
-      $this->intuitResponse = false;
+    public function clearResponse()
+    {
+        $this->intuitResponse = false;
     }
 
     /**
      * Send a request and return the response
      * @return mixed <b>TRUE</b> on success or <b>FALSE</b> on failure. However, if the <b>CURLOPT_RETURNTRANSFER</b>
      */
-    private function executeRequest(){
+    private function executeRequest()
+    {
         return $this->basecURL->execute();
     }
 
@@ -105,18 +133,20 @@ class CurlHttpClient implements HttpClientInterface{
      * The error during HTTP/HTTPS call. For example, the certificate expired. The server respond time out. It has nothing to do with the
      * status code returned from server.
      */
-    private function handleErrors(){
-        if($this->basecURL->errno() || $this->basecURL->error()){
-           $errorMsg = $this->basecURL->error();
-           $errorNumber = $this->basecURL->errno();
-           throw new SdkException("cURL error during making API call. cURL Error Number:[" . $errorNumber . "] with error:[" . $errorMsg . "]");
+    private function handleErrors()
+    {
+        if ($this->basecURL->errno() || $this->basecURL->error()) {
+            $errorMsg = $this->basecURL->error();
+            $errorNumber = $this->basecURL->errno();
+            throw new SdkException("cURL error during making API call. cURL Error Number:[" . $errorNumber . "] with error:[" . $errorMsg . "]");
         }
     }
 
     /**
      * @inheritdoc
      */
-    public function setIntuitResponse($response){
+    public function setIntuitResponse($response)
+    {
         $headerSize = $this->basecURL->getInfo(CURLINFO_HEADER_SIZE);
         $rawHeaders = mb_substr($response, 0, $headerSize);
         $rawBody = mb_substr($response, $headerSize);
@@ -128,36 +158,42 @@ class CurlHttpClient implements HttpClientInterface{
     /**
      * Check if the cURL instance exists. If not or closed, create a new BaseCurl instance for this Http client
      */
-    private function initializeCurl(){
-        if($this->basecURL->isCurlSet()){ return; }
-        else {$this->basecURL->init();}
+    private function initializeCurl()
+    {
+        if ($this->basecURL->isCurlSet()) {
+            return;
+        } else {
+            $this->basecURL->init();
+        }
     }
 
     /**
-    * Get headers for the QuciKbooks Online Response
-    */
-    private function getHeaders($headers){
-      if(!isset($headers) || empty($headers)){
-          throw new SdkException("Error. The headers set for cURL are either NULL or Empty");
-      }else{
-          $convertedHeaders = $this->convertHeaderArrayToHeaders($headers);
-          return $convertedHeaders;
-      }
+     * Get headers for the QuciKbooks Online Response
+     */
+    private function getHeaders($headers)
+    {
+        if (!isset($headers) || empty($headers)) {
+            throw new SdkException("Error. The headers set for cURL are either NULL or Empty");
+        } else {
+            $convertedHeaders = $this->convertHeaderArrayToHeaders($headers);
+            return $convertedHeaders;
+        }
     }
 
     /**
      * Set the SSL certifcate path and corresponding varaibles for cURL
      */
-    private function setSSL(&$curl_opt, $verifySSL){
-      $curl_opt[CURLOPT_SSL_VERIFYPEER] = true;
-      if($verifySSL){
-          $curl_opt[CURLOPT_SSL_VERIFYHOST] = 2;
-          //based on spec, if TLS 1.2 is supported, it will use the TLS 1.2 or latest version by default
-          //$curl_opt[CURLOPT_SSLVERSION] = 6;
-          $curl_opt[CURLOPT_CAINFO] = CoreConstants::getCertPath(); //Pem certification Key Path
-      } else {
-          $curl_opt[CURLOPT_SSL_VERIFYHOST] = 0;
-      }
+    private function setSSL(&$curl_opt, $verifySSL)
+    {
+        $curl_opt[CURLOPT_SSL_VERIFYPEER] = true;
+        if ($verifySSL) {
+            $curl_opt[CURLOPT_SSL_VERIFYHOST] = 2;
+            //based on spec, if TLS 1.2 is supported, it will use the TLS 1.2 or latest version by default
+            //$curl_opt[CURLOPT_SSLVERSION] = 6;
+            $curl_opt[CURLOPT_CAINFO] = CoreConstants::getCertPath(); //Pem certification Key Path
+        } else {
+            $curl_opt[CURLOPT_SSL_VERIFYHOST] = 0;
+        }
     }
 
     /**
@@ -165,26 +201,28 @@ class CurlHttpClient implements HttpClientInterface{
      * @param array $headerArray The request headers
      * @return array Curl Headers
      */
-    public function convertHeaderArrayToHeaders(array $headerArray){
-         $headers = array();
-         foreach($headerArray as $k => $v){
-              $headers[] = $k . ":" . $v;
-         }
-         return $headers;
+    public function convertHeaderArrayToHeaders(array $headerArray)
+    {
+        $headers = array();
+        foreach ($headerArray as $k => $v) {
+            $headers[] = $k . ":" . $v;
+        }
+        return $headers;
     }
 
     /**
      * close the connection of current http client
      */
-    private function closeConnection(){
+    private function closeConnection()
+    {
         $this->basecURL->close();
     }
 
     /**
      * @inheritdoc
      */
-    public function getLastResponse(){
+    public function getLastResponse()
+    {
         return $this->intuitResponse;
     }
-
 }
