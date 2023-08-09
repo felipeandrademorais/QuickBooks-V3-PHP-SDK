@@ -257,10 +257,9 @@ class OAuth2LoginHelper
    * @param String $code            The Authorization Code returned to your redirect Uri
    * @param String RealmID          The Company ID that will be associated with the Acess Token. It does not use for exchange authorization Code to
    *                                authorization token, however, it will be used to help update the OAuth 2 token easier at a later step.
-   * @param Array $proxy            The proxy information, URL and Port
    * @return OAuth2AccessToken      The OAuth2AccessToken Object
    */
-  public function exchangeAuthorizationCodeForToken($code, $realmID, $proxy)
+  public function exchangeAuthorizationCodeForToken($code, $realmID)
   {
     if (!isset($code)) {
       throw new SdkException("The code is not set. Can't exchange for OAuth 2 Access Token.");
@@ -278,7 +277,7 @@ class OAuth2LoginHelper
       'Content-Type' => 'application/x-www-form-urlencoded'
     );
     $this->LogAPIRequestToLog(http_build_query($parameters), CoreConstants::OAUTH2_TOKEN_ENDPOINT_URL, $http_header);
-    $intuitResponse = $this->curlHttpClient->makeAPICall(CoreConstants::OAUTH2_TOKEN_ENDPOINT_URL, CoreConstants::HTTP_POST, $http_header, http_build_query($parameters), null, true, $proxy);
+    $intuitResponse = $this->curlHttpClient->makeAPICall(CoreConstants::OAUTH2_TOKEN_ENDPOINT_URL, CoreConstants::HTTP_POST, $http_header, http_build_query($parameters), null, true);
     $this->LogAPIResponseToLog($intuitResponse->getBody(), CoreConstants::OAUTH2_TOKEN_ENDPOINT_URL, $intuitResponse->getHeaders());
     $this->faultHandler = $intuitResponse->getFaultHandler();
     if ($this->faultHandler) {
