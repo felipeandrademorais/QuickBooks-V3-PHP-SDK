@@ -435,7 +435,9 @@ class DataService
                 null,
                 null,
                 null,
-                $this->getServiceContext()
+                $this->getServiceContext(),
+                array_key_exists('proxy_url', $settings) ? $settings['proxy_url'] : null,
+                array_key_exists('proxy_port', $settings) ? $settings['proxy_port'] : null,
             );
         } else {
             $redirectURL = CoreConstants::getRedirectURL($settings);
@@ -447,6 +449,7 @@ class DataService
                 $redirectURL,
                 $scope,
                 $state,
+                null,
                 array_key_exists('proxy_url', $settings) ? $settings['proxy_url'] : null,
                 array_key_exists('proxy_port', $settings) ? $settings['proxy_port'] : null,
             );
