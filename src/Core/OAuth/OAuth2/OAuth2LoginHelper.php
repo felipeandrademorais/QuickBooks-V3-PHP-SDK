@@ -105,7 +105,7 @@ class OAuth2LoginHelper
    * @param String $state                      The string to verify the request is not compromised
    * @param ServiceContext $serviceContext     The serviceContext for the request, only passed for making refresh token API call
    */
-  public function __construct($clientID, $clientSecret, $redirectUri = null, $scope = null, $state = null, ServiceContext $serviceContext = null, $proxyUrl, $proxyPort)
+  public function __construct($clientID, $clientSecret, $redirectUri = null, $scope = null, $state = null, ServiceContext $serviceContext = null, $proxyUrl = null, $proxyPort = null)
   {
     //used for refresh token
     if (isset($serviceContext)) {
